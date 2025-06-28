@@ -3,16 +3,21 @@ from config import OPENAI_API_KEY
 from memory_manager import dish_memory
 from prompt_variations import prompt_generator
 
-# Инициализация клиента с минимальными параметрами для Railway
+# Инициализация клиента с настройками для Railway
 try:
-    client = OpenAI(api_key=OPENAI_API_KEY)
+    client = OpenAI(
+        api_key=OPENAI_API_KEY,
+        timeout=60.0,  # Увеличиваем таймаут
+        max_retries=5   # Больше попыток
+    )
 except Exception as e:
     print(f"Ошибка инициализации OpenAI: {e}")
     # Fallback для Railway окружения
     import os
     client = OpenAI(
         api_key=os.getenv('OPENAI_API_KEY', OPENAI_API_KEY),
-        timeout=30.0
+        timeout=60.0,
+        max_retries=5
     )
 
 import logging
