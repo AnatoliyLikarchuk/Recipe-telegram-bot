@@ -174,10 +174,27 @@ def main():
     
     # Регистрируем обработчики
     application.add_handler(CommandHandler("start", start))
+    application.add_handler(CommandHandler("menu", start))  # дублируем команду для удобства
     application.add_handler(CallbackQueryHandler(button_handler))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text_message))
     
+    # Устанавливаем команды бота для меню
+    import asyncio
+    async def set_commands():
+        from telegram import BotCommand
+        commands = [
+            BotCommand("start", "🏠 Главное меню"),
+            BotCommand("menu", "📋 Показать меню"),
+        ]
+        await application.bot.set_my_commands(commands)
+    
     print("✅ Бот запущен и готов к работе!")
+    
+    # Устанавливаем команды и запускаем
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(set_commands())
+    
     application.run_polling()
 
 if __name__ == "__main__":
