@@ -1,6 +1,6 @@
 import logging
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
 from config import BOT_TOKEN
 from ai_helper import get_random_dish, generate_weekly_menu, format_weekly_menu
 
@@ -151,6 +151,21 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     elif query.data == "back_to_main":
         await back_to_main(update, context)
 
+async def handle_text_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Обработчик текстовых сообщений"""
+    keyboard = [
+        [
+            InlineKeyboardButton("🎲 Случайное блюдо", callback_data="random_dish"),
+            InlineKeyboardButton("📅 Меню на неделю", callback_data="weekly_menu")
+        ]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    await update.message.reply_text(
+        "🤖 Привет! Я работаю только с кнопками.\n\nИспользуй кнопки ниже для выбора:",
+        reply_markup=reply_markup
+    )
+
 def main():
     """Запуск бота"""
     print("🚀 Запускаю бота...")
@@ -160,6 +175,7 @@ def main():
     # Регистрируем обработчики
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CallbackQueryHandler(button_handler))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text_message))
     
     print("✅ Бот запущен и готов к работе!")
     application.run_polling()
