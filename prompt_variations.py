@@ -50,11 +50,18 @@ class PromptGenerator:
     
     def get_random_prompt(self, meal_type, avoid_text=""):
         """Получить случайный промпт для категории еды"""
+        print(f"[PROMPT DEBUG] Генерируем промпт для: {meal_type}")
+        print(f"[PROMPT DEBUG] Избегаем: '{avoid_text}'")
+        
         if meal_type not in self.prompts:
+            print(f"[PROMPT WARNING] Неизвестная категория '{meal_type}', используем 'обед'")
             meal_type = "обед"  # fallback
         
         prompt_template = random.choice(self.prompts[meal_type])
-        return prompt_template.format(avoid_text=avoid_text)
+        final_prompt = prompt_template.format(avoid_text=avoid_text)
+        print(f"[PROMPT DEBUG] Выбранный шаблон (первые 50 символов): {prompt_template[:50]}...")
+        
+        return final_prompt
 
 # Глобальный экземпляр генератора
 prompt_generator = PromptGenerator()

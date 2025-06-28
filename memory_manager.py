@@ -11,11 +11,16 @@ class DishMemory:
     
     def add_dish(self, meal_type, dish_name):
         """Добавить блюдо в память"""
+        print(f"[MEMORY DEBUG] Добавляем блюдо '{dish_name}' в категорию '{meal_type}'")
         if meal_type in self.recent_dishes:
             self.recent_dishes[meal_type].append(dish_name)
             # Оставляем только последние max_dishes блюд
             if len(self.recent_dishes[meal_type]) > self.max_dishes:
-                self.recent_dishes[meal_type].pop(0)
+                removed = self.recent_dishes[meal_type].pop(0)
+                print(f"[MEMORY DEBUG] Удалили старое блюдо: '{removed}'")
+            print(f"[MEMORY DEBUG] Текущая память для {meal_type}: {self.recent_dishes[meal_type]}")
+        else:
+            print(f"[MEMORY ERROR] Неизвестная категория: {meal_type}")
     
     def get_recent_dishes(self, meal_type):
         """Получить список последних блюд для категории"""

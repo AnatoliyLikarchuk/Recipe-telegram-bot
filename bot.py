@@ -62,12 +62,16 @@ async def get_dish_suggestion(update: Update, context: ContextTypes.DEFAULT_TYPE
     await query.answer()
     
     meal_type = query.data.replace("dish_", "")
+    print(f"[BOT DEBUG] Запрос блюда для: {meal_type}")
+    print(f"[BOT DEBUG] Callback data: {query.data}")
     
     # Показываем загрузку
     await query.edit_message_text("🤔 Думаю над блюдом...")
     
     try:
+        print(f"[BOT DEBUG] Вызываем get_random_dish({meal_type})")
         dish = get_random_dish(meal_type)
+        print(f"[BOT DEBUG] Получили блюдо: '{dish}'")
         
         keyboard = [
             [InlineKeyboardButton("🔄 Другое блюдо", callback_data=f"dish_{meal_type}")],
@@ -83,7 +87,10 @@ async def get_dish_suggestion(update: Update, context: ContextTypes.DEFAULT_TYPE
             reply_markup=reply_markup,
             parse_mode='Markdown'
         )
+        print(f"[BOT DEBUG] Сообщение отправлено пользователю")
+        
     except Exception as e:
+        print(f"[BOT ERROR] Ошибка при получении блюда: {type(e).__name__}: {e}")
         logger.error(f"Ошибка при получении блюда: {e}")
         await query.edit_message_text(
             "😕 Произошла ошибка. Попробуй еще раз.",
@@ -141,18 +148,29 @@ async def back_to_main(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Обработчик всех кнопок"""
     query = update.callback_query
+    print(f"[BOT DEBUG] Нажата кнопка: {query.data}")
+    print(f"[BOT DEBUG] От пользователя: {query.from_user.id}")
     
     if query.data == "random_dish":
+        print("[BOT DEBUG] Переход к меню случайного блюда")
         await random_dish_menu(update, context)
     elif query.data == "weekly_menu":
+        print("[BOT DEBUG] Переход к генерации меню на неделю")
         await generate_menu(update, context)
     elif query.data.startswith("dish_"):
+        print(f"[BOT DEBUG] Запрос конкретного блюда: {query.data}")
         await get_dish_suggestion(update, context)
     elif query.data == "back_to_main":
+        print("[BOT DEBUG] Возврат в главное меню")
         await back_to_main(update, context)
+    else:
+        print(f"[BOT WARNING] Неизвестная кнопка: {query.data}")
 
 async def handle_text_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Обработчик текстовых сообщений"""
+    print(f"[BOT DEBUG] Получено текстовое сообщение: '{update.message.text}'")
+    print(f"[BOT DEBUG] От пользователя: {update.message.from_user.id}")
+    
     keyboard = [
         [
             InlineKeyboardButton("🎲 Случайное блюдо", callback_data="random_dish"),
