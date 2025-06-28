@@ -1,24 +1,7 @@
-from openai import OpenAI
-from config import OPENAI_API_KEY
+from config import OPENAI_API_KEY, DEEPSEEK_API_KEY, AI_PROVIDER
 from memory_manager import dish_memory
 from prompt_variations import prompt_generator
-
-# Инициализация клиента с настройками для Railway
-try:
-    client = OpenAI(
-        api_key=OPENAI_API_KEY,
-        timeout=60.0,  # Увеличиваем таймаут
-        max_retries=5   # Больше попыток
-    )
-except Exception as e:
-    print(f"Ошибка инициализации OpenAI: {e}")
-    # Fallback для Railway окружения
-    import os
-    client = OpenAI(
-        api_key=os.getenv('OPENAI_API_KEY', OPENAI_API_KEY),
-        timeout=60.0,
-        max_retries=5
-    )
+from ai_clients import MultiAIClient
 
 import logging
 import os
@@ -26,6 +9,21 @@ import os
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Инициализация универсального AI клиента
+try:
+    client = MultiAIClient(
+        openai_key=OPENAI_API_KEY,
+        deepseek_key=DEEPSEEK_API_KEY,
+        provider=AI_PROVIDER
+    )
+    logger.info(f"🤖 AI клиент инициализирован: {client.get_active_provider()}")
+except Exception as e:
+    logger.error(f"Ошибка инициализации AI клиента: {e}")
+    # Fallback на простой OpenAI клиент
+    from ai_clients import OpenAIClient
+    client = OpenAIClient(OPENAI_API_KEY)
+    logger.warning("⚠️ Используется fallback OpenAI клиент")
 
 def get_random_dish(meal_type):
     """Получить случайное блюдо для завтрака, обеда или ужина"""
@@ -47,21 +45,18 @@ def get_random_dish(meal_type):
     logger.info(f"[AI DEBUG] Промпт: {prompt[:100]}...")
     
     try:
-        logger.info("[AI DEBUG] Отправляем запрос к OpenAI...")
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[{"role": "user", "content": prompt}],
+        logger.info("[AI DEBUG] Отправляем запрос к AI...")
+        dish_name = client.get_completion(
+            prompt=prompt,
             max_tokens=50,
-            temperature=0.9,  # Уменьшаем для стабильности
-            top_p=0.9         # Контроль качества
+            temperature=0.9
         )
         
-        dish_name = response.choices[0].message.content.strip()
-        logger.info(f"[AI DEBUG] Ответ OpenAI: '{dish_name}'")
+        logger.info(f"[AI DEBUG] Ответ AI: '{dish_name}'")
         
         # Проверяем что ответ не пустой
         if not dish_name:
-            logger.warning("[AI DEBUG] Пустой ответ от OpenAI!")
+            logger.warning("[AI DEBUG] Пустой ответ от AI!")
             return "Омлет с овощами"
         
         # Сохраняем блюдо в память для избежания повторов
@@ -71,7 +66,7 @@ def get_random_dish(meal_type):
         return dish_name
         
     except Exception as e:
-        logger.error(f"[AI ERROR] Ошибка OpenAI: {type(e).__name__}: {e}")
+        logger.error(f"[AI ERROR] Ошибка AI: {type(e).__name__}: {e}")
         logger.error(f"[AI ERROR] Полная ошибка: {str(e)}")
         return "Омлет с овощами"  # fallback вариант
 
