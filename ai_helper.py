@@ -1,7 +1,17 @@
 from openai import OpenAI
 from config import OPENAI_API_KEY
 
-client = OpenAI(api_key=OPENAI_API_KEY)
+# Инициализация клиента с минимальными параметрами для Railway
+try:
+    client = OpenAI(api_key=OPENAI_API_KEY)
+except Exception as e:
+    print(f"Ошибка инициализации OpenAI: {e}")
+    # Fallback для Railway окружения
+    import os
+    client = OpenAI(
+        api_key=os.getenv('OPENAI_API_KEY', OPENAI_API_KEY),
+        timeout=30.0
+    )
 
 def get_random_dish(meal_type):
     """Получить случайное блюдо для завтрака, обеда или ужина"""
