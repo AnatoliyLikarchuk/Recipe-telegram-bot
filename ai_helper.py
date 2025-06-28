@@ -1,5 +1,7 @@
 from openai import OpenAI
 from config import OPENAI_API_KEY
+from memory_manager import dish_memory
+from prompt_variations import prompt_generator
 
 # Инициализация клиента с минимальными параметрами для Railway
 try:
@@ -15,29 +17,29 @@ except Exception as e:
 
 def get_random_dish(meal_type):
     """Получить случайное блюдо для завтрака, обеда или ужина"""
-    prompt = f"""
-    Ты - персональный кулинарный помощник Тани. Твоя единственная задача - предлагать простые и вкусные блюда для домашнего приготовления.
     
-    Категория: {meal_type}
+    # Получаем список блюд для избежания
+    avoid_text = dish_memory.get_avoid_list_text(meal_type)
     
-    Требования:
-    - Предложи ТОЛЬКО ОДНО блюдо
-    - Отвечай ТОЛЬКО названием блюда (максимум 4-5 слов)
-    - Блюдо должно быть простым для домашнего приготовления
-    - Учитывай русскую/европейскую кухню
-    - Никаких объяснений и инструкций
-    
-    Пример ответа: "Омлет с помидорами"
-    """
+    # Генерируем случайный промпт с учетом избегаемых блюд
+    prompt = prompt_generator.get_random_prompt(meal_type, avoid_text)
     
     try:
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[{"role": "user", "content": prompt}],
             max_tokens=50,
-            temperature=0.8
+            temperature=1.0,  # Увеличиваем для большей случайности
+            top_p=0.9         # Добавляем для контроля качества
         )
-        return response.choices[0].message.content.strip()
+        
+        dish_name = response.choices[0].message.content.strip()
+        
+        # Сохраняем блюдо в память для избежания повторов
+        dish_memory.add_dish(meal_type, dish_name)
+        
+        return dish_name
+        
     except Exception as e:
         print(f"Ошибка OpenAI: {e}")
         return "Омлет с овощами"  # fallback вариант
