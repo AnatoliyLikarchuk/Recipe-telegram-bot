@@ -20,28 +20,37 @@ def get_random_dish(meal_type):
     
     # Получаем список блюд для избежания
     avoid_text = dish_memory.get_avoid_list_text(meal_type)
+    print(f"[DEBUG] Избегаем для {meal_type}: {avoid_text}")
     
     # Генерируем случайный промпт с учетом избегаемых блюд
     prompt = prompt_generator.get_random_prompt(meal_type, avoid_text)
+    print(f"[DEBUG] Промпт: {prompt[:100]}...")
     
     try:
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[{"role": "user", "content": prompt}],
             max_tokens=50,
-            temperature=1.0,  # Увеличиваем для большей случайности
-            top_p=0.9         # Добавляем для контроля качества
+            temperature=0.9,  # Уменьшаем для стабильности
+            top_p=0.9         # Контроль качества
         )
         
         dish_name = response.choices[0].message.content.strip()
+        print(f"[DEBUG] Ответ OpenAI: '{dish_name}'")
+        
+        # Проверяем что ответ не пустой
+        if not dish_name:
+            print("[DEBUG] Пустой ответ от OpenAI!")
+            return "Омлет с овощами"
         
         # Сохраняем блюдо в память для избежания повторов
         dish_memory.add_dish(meal_type, dish_name)
+        print(f"[DEBUG] Сохранено в память: {dish_name}")
         
         return dish_name
         
     except Exception as e:
-        print(f"Ошибка OpenAI: {e}")
+        print(f"[ERROR] Ошибка OpenAI: {type(e).__name__}: {e}")
         return "Омлет с овощами"  # fallback вариант
 
 def generate_weekly_menu():
