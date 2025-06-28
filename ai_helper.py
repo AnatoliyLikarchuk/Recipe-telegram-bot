@@ -15,18 +15,34 @@ except Exception as e:
         timeout=30.0
     )
 
+import logging
+import os
+
+# Настройка логирования
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 def get_random_dish(meal_type):
     """Получить случайное блюдо для завтрака, обеда или ужина"""
     
     # Получаем список блюд для избежания
     avoid_text = dish_memory.get_avoid_list_text(meal_type)
-    print(f"[DEBUG] Избегаем для {meal_type}: {avoid_text}")
+    logger.info(f"[AI DEBUG] Избегаем для {meal_type}: {avoid_text}")
+    
+    # Проверяем API ключ
+    api_key = os.getenv('OPENAI_API_KEY') or OPENAI_API_KEY
+    if not api_key or api_key == 'your_openai_key_here':
+        logger.error("[AI ERROR] OpenAI API ключ не найден или не установлен!")
+        return "Омлет с овощами"
+    
+    logger.info(f"[AI DEBUG] API ключ найден, длина: {len(api_key)} символов")
     
     # Генерируем случайный промпт с учетом избегаемых блюд
     prompt = prompt_generator.get_random_prompt(meal_type, avoid_text)
-    print(f"[DEBUG] Промпт: {prompt[:100]}...")
+    logger.info(f"[AI DEBUG] Промпт: {prompt[:100]}...")
     
     try:
+        logger.info("[AI DEBUG] Отправляем запрос к OpenAI...")
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[{"role": "user", "content": prompt}],
@@ -36,21 +52,22 @@ def get_random_dish(meal_type):
         )
         
         dish_name = response.choices[0].message.content.strip()
-        print(f"[DEBUG] Ответ OpenAI: '{dish_name}'")
+        logger.info(f"[AI DEBUG] Ответ OpenAI: '{dish_name}'")
         
         # Проверяем что ответ не пустой
         if not dish_name:
-            print("[DEBUG] Пустой ответ от OpenAI!")
+            logger.warning("[AI DEBUG] Пустой ответ от OpenAI!")
             return "Омлет с овощами"
         
         # Сохраняем блюдо в память для избежания повторов
         dish_memory.add_dish(meal_type, dish_name)
-        print(f"[DEBUG] Сохранено в память: {dish_name}")
+        logger.info(f"[AI DEBUG] Сохранено в память: {dish_name}")
         
         return dish_name
         
     except Exception as e:
-        print(f"[ERROR] Ошибка OpenAI: {type(e).__name__}: {e}")
+        logger.error(f"[AI ERROR] Ошибка OpenAI: {type(e).__name__}: {e}")
+        logger.error(f"[AI ERROR] Полная ошибка: {str(e)}")
         return "Омлет с овощами"  # fallback вариант
 
 def generate_weekly_menu():
