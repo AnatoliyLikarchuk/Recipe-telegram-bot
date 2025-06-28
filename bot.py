@@ -2,7 +2,7 @@ import logging
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
 from config import BOT_TOKEN
-from ai_helper import get_random_dish, generate_weekly_menu, format_weekly_menu
+from ai_helper import get_random_dish, generate_weekly_menu, format_weekly_menu, generate_daily_menu, format_daily_menu
 
 # Настройка логирования
 logging.basicConfig(
@@ -16,6 +16,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     keyboard = [
         [
             InlineKeyboardButton("🎲 Случайное блюдо", callback_data="random_dish"),
+            InlineKeyboardButton("🍽️ Меню на день", callback_data="daily_menu")
+        ],
+        [
             InlineKeyboardButton("📅 Меню на неделю", callback_data="weekly_menu")
         ]
     ]
@@ -28,6 +31,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 Выбери что тебе нужно:
 • 🎲 *Случайное блюдо* - предложу блюдо для завтрака, обеда или ужина
+• 🍽️ *Меню на день* - составлю завтрак, обед и ужин на один день
 • 📅 *Меню на неделю* - составлю полное меню на всю неделю
     """
     
@@ -126,6 +130,35 @@ async def generate_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
             reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Назад", callback_data="back_to_main")]])
         )
 
+async def generate_daily_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Сгенерировать меню на день"""
+    query = update.callback_query
+    await query.answer()
+    
+    await query.edit_message_text("🍽️ Составляю меню на день... ⏱️")
+    
+    try:
+        menu = generate_daily_menu()
+        menu_text = format_daily_menu(menu)
+        
+        keyboard = [
+            [InlineKeyboardButton("🔄 Новое меню на день", callback_data="daily_menu")],
+            [InlineKeyboardButton("🏠 Главное меню", callback_data="back_to_main")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await query.edit_message_text(
+            menu_text,
+            reply_markup=reply_markup,
+            parse_mode='Markdown'
+        )
+    except Exception as e:
+        logger.error(f"Ошибка при генерации меню на день: {e}")
+        await query.edit_message_text(
+            "😕 Произошла ошибка при создании меню на день. Попробуй еще раз.",
+            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Назад", callback_data="back_to_main")]])
+        )
+
 async def back_to_main(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Вернуться в главное меню"""
     query = update.callback_query
@@ -134,6 +167,9 @@ async def back_to_main(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     keyboard = [
         [
             InlineKeyboardButton("🎲 Случайное блюдо", callback_data="random_dish"),
+            InlineKeyboardButton("🍽️ Меню на день", callback_data="daily_menu")
+        ],
+        [
             InlineKeyboardButton("📅 Меню на неделю", callback_data="weekly_menu")
         ]
     ]
@@ -154,6 +190,9 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     if query.data == "random_dish":
         print("[BOT DEBUG] Переход к меню случайного блюда")
         await random_dish_menu(update, context)
+    elif query.data == "daily_menu":
+        print("[BOT DEBUG] Переход к генерации меню на день")
+        await generate_daily_menu_handler(update, context)
     elif query.data == "weekly_menu":
         print("[BOT DEBUG] Переход к генерации меню на неделю")
         await generate_menu(update, context)
@@ -174,6 +213,9 @@ async def handle_text_message(update: Update, context: ContextTypes.DEFAULT_TYPE
     keyboard = [
         [
             InlineKeyboardButton("🎲 Случайное блюдо", callback_data="random_dish"),
+            InlineKeyboardButton("🍽️ Меню на день", callback_data="daily_menu")
+        ],
+        [
             InlineKeyboardButton("📅 Меню на неделю", callback_data="weekly_menu")
         ]
     ]
