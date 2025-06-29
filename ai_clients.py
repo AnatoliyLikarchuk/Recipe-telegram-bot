@@ -88,19 +88,19 @@ class DeepSeekClient(AIClientBase):
 class MultiAIClient:
     """Клиент с поддержкой множественных AI провайдеров"""
     
-    def __init__(self, openai_key: str, deepseek_key: Optional[str] = None, provider: str = "openai"):
+    def __init__(self, openai_key: Optional[str] = None, deepseek_key: str = None, provider: str = "deepseek"):
         self.clients = {}
         self.fallback_clients = []
         
-        # Инициализируем OpenAI клиент
-        if openai_key:
-            self.clients["openai"] = OpenAIClient(openai_key)
-            self.fallback_clients.append("openai")
-        
-        # Инициализируем DeepSeek клиент
+        # Инициализируем DeepSeek клиент (основной)
         if deepseek_key:
             self.clients["deepseek"] = DeepSeekClient(deepseek_key)
             self.fallback_clients.append("deepseek")
+        
+        # Инициализируем OpenAI клиент (резервный)
+        if openai_key:
+            self.clients["openai"] = OpenAIClient(openai_key)
+            self.fallback_clients.append("openai")
         
         self.provider = provider.lower()
         logger.info(f"[MultiAI] Инициализирован с провайдером: {self.provider}")
